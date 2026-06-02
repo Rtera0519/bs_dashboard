@@ -133,7 +133,7 @@ export default function NewPostClient({ accounts }: NewPostClientProps) {
               投稿内容
             </label>
             <textarea
-              className={`w-full bg-surface border rounded-lg p-md pb-xl text-body-lg font-body-lg text-on-surface focus:ring-2 focus:ring-opacity-20 focus:outline-none resize-none ${
+              className={`w-full bg-surface border rounded-lg p-md pb-12 text-body-lg font-body-lg text-on-surface focus:ring-2 focus:ring-opacity-20 focus:outline-none resize-none ${
                 isOverLimit
                   ? 'border-error focus:ring-error focus:border-error'
                   : 'border-outline-variant focus:ring-primary focus:border-primary'
@@ -146,7 +146,7 @@ export default function NewPostClient({ accounts }: NewPostClientProps) {
             ></textarea>
             
             {/* Toolbar Icons & Character Counter */}
-            <div className="absolute bottom-md left-md flex gap-sm text-on-surface-variant">
+            <div className="absolute bottom-3 left-4 flex gap-sm text-on-surface-variant">
               <button
                 type="button"
                 className="p-xs hover:text-primary transition-colors hover:bg-surface-container rounded-md cursor-pointer"
@@ -168,7 +168,7 @@ export default function NewPostClient({ accounts }: NewPostClientProps) {
             </div>
             
             <div
-              className={`absolute bottom-md right-md text-label-sm font-label-sm ${
+              className={`absolute bottom-3 right-4 text-label-sm font-label-sm ${
                 isOverLimit ? 'text-error font-bold' : 'text-on-surface-variant'
               }`}
             >
