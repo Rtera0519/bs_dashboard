@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BlueQueue (Bluesky予約投稿ダッシュボード)
 
-## Getting Started
+BlueQueueは、Blueskyアカウントと連携し、投稿の作成・予約・一括管理を行うNext.js製のモダンなダッシュボードアプリケーションです。
 
-First, run the development server:
+---
 
+## 🚀 主な機能
+
+1. **ダッシュボード**
+   - 予約中、本日の投稿、送信完了、送信失敗のステータス数をBentoグリッド形式で俯瞰。
+   - 直近の予約リストの確認や、失敗した投稿の「即時再試行」アクションをサポート。
+2. **新規投稿作成**
+   - 絵文字・リンクボタンを装備したテキストエディタ。
+   - リアルタイム文字数カウンター（最大300文字制限対応）。
+   - Blueskyの投稿カードを模したリアルタイムプレビュー機能。
+3. **一括投稿登録**
+   - 複数行（改行区切り）の文章を入力し、開始日時と投稿間隔（15分〜1日）を指定することで、自動で分割した予約スケジュールを一括生成。
+   - プレビューリストでエラー投稿（文字数超過など）を登録前に事前検出可能。
+4. **投稿一覧・管理**
+   - 「すべて」「下書き」「予約中」「投稿済み」「失敗」のタブ切り替えと、投稿内容の部分一致検索。
+   - 下書きや予約投稿の編集、スケジュール解除、削除、即時送信、および送信済み投稿の「複製作成」機能。
+5. **アカウント設定**
+   - 登録アカウントのハンドル名、表示名、アプリパスワードの設定。
+   - アカウントの疎通を確認する「接続テスト」機能。
+   - 投稿間隔などのデフォルト設定。
+   - Vercel Cron等で利用する「Cronトリガー用シークレットキー」の確認とコピー。
+
+---
+
+## 🛠️ 技術スタック
+
+- **フレームワーク**: Next.js 16 (App Router) + TypeScript
+- **スタイリング**: Tailwind CSS v4 / Material Symbols Outlined
+- **認証**: セッションクッキーベースの管理画面保護
+- **セキュリティ**: AES-256-CBCによるアプリパスワード暗号化（DB保存時）
+- **ライブラリ**: `@atproto/api` (Bluesky接続用)
+- **データベース**: Supabase (PostgreSQL) 🔌 
+  - *※環境変数が未設定の場合、自動的にローカルの `mock_db.json` に永続化する**フォールバック機能**を備えており、環境構築なしで即座に動作検証可能です。*
+
+---
+
+## ⚙️ セットアップ手順
+
+### 1. 依存関係のインストール
+プロジェクトのルートディレクトリで以下を実行します：
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. 環境変数の設定
+プロジェクトのルートに `.env` または `.env.local` ファイルを作成し、以下を記述します：
+```env
+# 管理画面のログインアカウント設定（未指定の場合はID: admin / パス: admin123 がデフォルトになります）
+ADMIN_ID=admin
+ADMIN_PASSWORD=admin123
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+# 暗号化およびセッション用キー（32バイト以上のランダムな値）
+APP_ENCRYPTION_KEY=bluequeue_default_session_secret_98765
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Cron実行時のアクセス保護キー
+CRON_SECRET=your_cron_secret_token
 
-## Learn More
+# (任意) Supabase本番データベース設定
+# 未設定の場合は自動的にローカルに `mock_db.json` が生成され動作します。
+# NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+# SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 3. ローカル開発サーバーの起動
+```bash
+npm run dev
+```
+起動後、ブラウザで [http://localhost:3000](http://localhost:3000) にアクセスし、設定した管理者ID・パスワードでログインしてください。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 4. アプリケーションのビルド
+```bash
+npm run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## ⏰ 自動投稿 (Cron API) の仕組み
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+予約投稿を自動でBlueskyに送信するため、バックエンドに以下のAPIが実装されています：
+- **エンドポイント**: `/api/cron/publish-scheduled`
+- **リクエスト仕様**: `Authorization: Bearer <CRON_SECRET>` ヘッダーを含めた `GET` または `POST` リクエスト。
+- **自律的リトライ機能**: ネットワークエラー等で投稿に失敗した場合、最大3回まで自動で10分後に再予約を設定します。
+- 外部のCronサービス（Vercel Cron、GitHub Actions、あるいは手元のローカルCron等）から定期的に上記エンドポイントをトリガーすることで自動運用が行えます。
