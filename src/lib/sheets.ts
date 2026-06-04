@@ -6,7 +6,8 @@ const GAS_API_TOKEN = process.env.GAS_API_TOKEN || 'your_gas_api_token_secret_he
 // Helper for making requests to GAS Webapp
 async function fetchFromGas(action: string, params: Record<string, string> = {}): Promise<any> {
   if (!GAS_WEBAPP_URL) {
-    throw new Error('GAS_WEBAPP_URL environment variable is not defined');
+    console.error('GAS_WEBAPP_URL environment variable is not defined');
+    return [];
   }
 
   const queryParams = new URLSearchParams({
@@ -17,23 +18,30 @@ async function fetchFromGas(action: string, params: Record<string, string> = {})
 
   const url = `${GAS_WEBAPP_URL}?${queryParams.toString()}`;
 
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: { 'Content-Type': 'application/json' },
-    // Prevent Next.js from caching these dynamic DB requests
-    cache: 'no-store',
-  });
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+      // Prevent Next.js from caching these dynamic DB requests
+      cache: 'no-store',
+    });
 
-  if (!res.ok) {
-    throw new Error(`GAS API GET error: ${res.statusText}`);
+    if (!res.ok) {
+      console.error(`GAS API GET error: ${res.statusText}`);
+      return [];
+    }
+
+    const result = await res.json();
+    if (!result.success) {
+      console.error(`GAS API returned failure: ${result.error}`);
+      return [];
+    }
+
+    return result.data;
+  } catch (error) {
+    console.error(`Failed to fetch from GAS API (${action}):`, error);
+    return [];
   }
-
-  const result = await res.json();
-  if (!result.success) {
-    throw new Error(`GAS API error: ${result.error}`);
-  }
-
-  return result.data;
 }
 
 async function postToGas(sheet: 'posts' | 'accounts' | 'logs', action: 'save' | 'delete', payload: Record<string, any>): Promise<any> {
