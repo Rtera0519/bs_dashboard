@@ -6,6 +6,14 @@ import { publishPost } from '@/lib/bluesky';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  return handleScheduledPublish(req);
+}
+
+export async function POST(req: NextRequest) {
+  return handleScheduledPublish(req);
+}
+
+async function handleScheduledPublish(req: NextRequest) {
   // Check CRON_SECRET authentication
   const CRON_SECRET = process.env.CRON_SECRET || 'sk_cron_9a8b7c6d5e4f3g2h1';
   
