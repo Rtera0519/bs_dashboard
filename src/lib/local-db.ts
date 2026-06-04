@@ -117,7 +117,11 @@ const defaultMockData: MockDBData = {
 function readMockDB(): MockDBData {
   try {
     if (!fs.existsSync(MOCK_DB_PATH)) {
-      fs.writeFileSync(MOCK_DB_PATH, JSON.stringify(defaultMockData, null, 2), 'utf-8');
+      try {
+        fs.writeFileSync(MOCK_DB_PATH, JSON.stringify(defaultMockData, null, 2), 'utf-8');
+      } catch (writeError) {
+        console.warn('Warning: Failed to initialize mock_db.json on read-only filesystem:', writeError);
+      }
       return defaultMockData;
     }
     const content = fs.readFileSync(MOCK_DB_PATH, 'utf-8');
@@ -132,7 +136,7 @@ function writeMockDB(data: MockDBData): void {
   try {
     fs.writeFileSync(MOCK_DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
   } catch (error) {
-    console.error('Error writing mock DB file:', error);
+    console.warn('Warning: Failed to write to mock_db.json (read-only filesystem on Vercel):', error);
   }
 }
 
