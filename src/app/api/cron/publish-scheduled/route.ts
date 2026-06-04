@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     const posts = await db.getPosts();
     const accounts = await db.getAccounts();
 
-    // Identify posts that are due
+    // Identify posts that are due (status is scheduled)
     const now = Date.now();
     const duePosts = posts.filter(
       (p) => p.status === 'scheduled' && p.scheduled_at && new Date(p.scheduled_at).getTime() <= now
@@ -36,6 +36,13 @@ export async function GET(req: NextRequest) {
     let retriedCount = 0;
 
     for (const post of duePosts) {
+      // Fetch latest post status to verify another thread hasn't picked it up
+      const latestPost = await db.getPostById(post.id);
+      if (!latestPost || latestPost.status !== 'scheduled') {
+        console.log(`Post ${post.id} already processed or processing by another thread.`);
+        continue;
+      }
+
       const account = accounts.find((a) => a.id === post.account_id);
       if (!account) {
         // Mark as failed directly
@@ -49,7 +56,7 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      // Mark status as posting
+      // Mark status as posting to prevent other parallel requests
       await db.savePost({
         ...post,
         status: 'posting',
@@ -81,7 +88,7 @@ export async function GET(req: NextRequest) {
           const retryTime = new Date(Date.now() + 10 * 60 * 1000).toISOString();
           await db.savePost({
             ...post,
-            status: 'scheduled', // Keep scheduled status
+            status: 'scheduled', // Reset to scheduled for next attempt
             scheduled_at: retryTime,
             error_message: `${errorMessage} (Retry ${nextRetryCount} pending)`,
             retry_count: nextRetryCount,

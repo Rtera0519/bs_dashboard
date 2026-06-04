@@ -45,3 +45,6 @@ mock_db.json
 stitch_bluequeue_dashboard_ui/
 stitch_bluequeue_dashboard_ui.zip
 temp_next_app/
+
+#docs
+/docs
