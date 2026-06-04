@@ -6,8 +6,10 @@ import DashboardClient from './DashboardClient';
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
-  const posts = await db.getPosts();
-  const accounts = await db.getAccounts();
+  const [posts, accounts] = await Promise.all([
+    db.getPosts(),
+    db.getAccounts()
+  ]);
   const displayName = accounts[0]?.display_name || 'ゲスト';
 
   return (

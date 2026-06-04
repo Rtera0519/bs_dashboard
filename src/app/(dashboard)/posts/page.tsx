@@ -6,8 +6,10 @@ import { Suspense } from 'react';
 export const dynamic = 'force-dynamic';
 
 export default async function PostsPage() {
-  const posts = await db.getPosts();
-  const accounts = await db.getAccounts();
+  const [posts, accounts] = await Promise.all([
+    db.getPosts(),
+    db.getAccounts()
+  ]);
 
   return (
     <>
